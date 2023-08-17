@@ -1,6 +1,7 @@
 import pygame
 from sys import exit
 import math
+from random import randint
 
 pygame.init()
 
@@ -32,6 +33,20 @@ cat_rect = cat_surf.get_rect(bottomleft=(100, floor_rect.top))
 
 dog_surf = pygame.image.load("graphics/dog.png").convert_alpha()
 dog_rect = dog_surf.get_rect(bottomleft=(600, floor_rect.top))
+
+# obsticles
+obstacle_rect_list = []
+
+# timer
+obsticle_timer = pygame.USEREVENT + 1
+pygame.time.set_timer(obsticle_timer, 1200)
+
+
+def obstacle_movement(obstacle_rect_list):
+    if obstacle_rect_list:
+        for obstacle_rect in obstacle_rect_list:
+            obstacle_rect.x -= 10
+            window.blit(dog_surf, obstacle_rect)
 
 
 def drawScore():
@@ -72,7 +87,7 @@ while True:
         if event.type == pygame.QUIT:
             exit()
 
-        if game_active == True:
+        if game_active:
             if event.type == pygame.KEYDOWN:
                 if cat_rect.bottom == floor_rect.top and event.key == pygame.K_SPACE:
                     cat_gravity = -25
@@ -86,6 +101,10 @@ while True:
                 dog_rect.left = window_x
                 game_active = True
                 last_time_ticks = int(pygame.time.get_ticks())/1000
+
+        if event.type == obsticle_timer and game_active:
+            obstacle_rect_list.append(dog_surf.get_rect(
+                bottomleft=(randint(900, 1900), floor_rect.top)))
 
     # Main game loop
     if game_active:
@@ -115,11 +134,14 @@ while True:
             cat_rect.bottom = floor_rect.top
         window.blit(cat_surf, cat_rect)
 
+        # Obstacle movement
+        obstacle_movement(obstacle_rect_list)
+
         # Dog
-        dog_rect.left -= 5
-        if dog_rect.right <= 0:
-            dog_rect.left = window_x
-        window.blit(dog_surf, dog_rect)
+        # dog_rect.left -= 5
+        # if dog_rect.right <= 0:
+        #     dog_rect.left = window_x
+        # window.blit(dog_surf, dog_rect)
 
         # Check Cat / Dog collision
         if cat_rect.colliderect(dog_rect):
