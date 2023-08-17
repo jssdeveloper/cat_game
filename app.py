@@ -12,6 +12,7 @@ window_y = 400
 window = pygame.display.set_mode((window_x, window_y))
 clock = pygame.time.Clock()
 font = pygame.font.Font("font/Pixeltype.ttf", 30)
+font_lg = pygame.font.Font("font/Pixeltype.ttf", 50)
 game_active = False
 last_time_ticks = 0
 cat_gravity = 0
@@ -34,27 +35,36 @@ dog_rect = dog_surf.get_rect(bottomleft=(600, floor_rect.top))
 
 
 def drawScore():
-    time_now = math.floor((pygame.time.get_ticks() - last_time_ticks)/1000)
+    time_now = int((pygame.time.get_ticks() / 1000) - last_time_ticks)
     score_surf = font.render(f"My Score {time_now}", "false", "white")
     score_rect = score_surf.get_rect(topleft=(50, 50))
     window.blit(score_surf, score_rect)
+    return time_now
 
 
-def gameOver(score):
+def gameOver():
     window.fill((13, 60, 79))
     player_surf = pygame.transform.rotozoom(cat_surf, 0, 2)
     player_rect = player_surf.get_rect(center=(window_x/2, window_y/2))
 
-    score_title = font.render(
-        f"Game Over! Your score is {score}", False, "White")
+    score_title = font_lg.render(
+        "Kitty Kat", False, "White")
     score_title_rect = score_title.get_rect(center=(window_x/2, 70))
 
-    info_title = font.render("Press SPACE to play again!", False, "White")
+    info_title = font.render("Press SPACE to play!", False, "White")
     info_title_rect = info_title.get_rect(center=(window_x/2, 330))
+
+    final_title = font.render(
+        f"Your score is {score}. Press SPACE to play again!!", False, "White")
+    final_title_rect = final_title.get_rect(center=(window_x/2, 330))
 
     window.blit(score_title, score_title_rect)
     window.blit(player_surf, player_rect)
-    window.blit(info_title, info_title_rect)
+
+    if score == 0:
+        window.blit(info_title, info_title_rect)
+    else:
+        window.blit(final_title, final_title_rect)
 
 
 while True:
@@ -70,14 +80,18 @@ while True:
             if cat_rect.bottom == floor_rect.top and event.type == pygame.MOUSEBUTTONDOWN:
                 if cat_rect.collidepoint(event.pos):
                     cat_gravity = -25
+
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 dog_rect.left = window_x
                 game_active = True
-                last_time_ticks = pygame.time.get_ticks()
+                last_time_ticks = int(pygame.time.get_ticks())/1000
 
     # Main game loop
     if game_active:
+
+        # Update score variable
+        score = drawScore()
 
         # Backdrop
         window.blit(backdrop_surf, (0, 0))
@@ -113,9 +127,8 @@ while True:
             dog_rect.right = window_x
 
     else:
-        score = math.floor((pygame.time.get_ticks() - last_time_ticks)/1000)
 
-        gameOver(score)
+        gameOver()
 
     pygame.display.update()
     clock.tick(60)
