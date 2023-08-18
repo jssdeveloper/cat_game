@@ -28,8 +28,18 @@ floor_rect = floor_surf.get_rect(bottomleft=(0, window_y))
 grass_surf = pygame.image.load("graphics/grass.png").convert_alpha()
 grass_rect = grass_surf.get_rect(bottomleft=(0, floor_rect.top + 50))
 
-cat_surf = pygame.image.load("graphics/cat.png").convert_alpha()
+
+cat_walk_1 = pygame.image.load("graphics/cat_walk_1.png").convert_alpha()
+cat_walk_2 = pygame.image.load("graphics/cat_walk_2.png").convert_alpha()
+cat_jump = pygame.image.load("graphics/cat_jump.png").convert_alpha()
+cat_index = 0
+cat_walk = [cat_walk_1, cat_walk_2]
+cat_surf = cat_walk[cat_index]
+
 cat_rect = cat_surf.get_rect(bottomleft=(100, floor_rect.top))
+
+rocket_surf = pygame.image.load("graphics/rocket.png").convert_alpha()
+rocket_rect = rocket_surf.get_rect(center=(300, 300))
 
 dog_surf = pygame.image.load("graphics/dog.png").convert_alpha()
 dog_rect = dog_surf.get_rect(bottomleft=(600, floor_rect.top))
@@ -39,14 +49,39 @@ obstacle_rect_list = []
 
 # timer
 obsticle_timer = pygame.USEREVENT + 1
-pygame.time.set_timer(obsticle_timer, 1200)
+pygame.time.set_timer(obsticle_timer, 1500)
 
 
-def obstacle_movement(obstacle_rect_list):
-    if obstacle_rect_list:
-        for obstacle_rect in obstacle_rect_list:
-            obstacle_rect.x -= 10
-            window.blit(dog_surf, obstacle_rect)
+def player_animation():
+    global cat_surf, cat_index
+    if cat_rect.bottom < floor_rect.top:
+        cat_surf = cat_jump
+    else:
+        cat_index += 0.1
+        if cat_index >= len(cat_walk):
+            cat_index = 0
+        cat_surf = cat_walk[int(cat_index)]
+
+    # else:
+
+    # animate walking if on floor
+    # change to jump surf if in the air
+    pass
+
+
+def obstacle_movement(obstacle_list):
+    if obstacle_list:
+        for obstacle_rect in obstacle_list:
+            obstacle_rect.x -= 5
+
+            if obstacle_rect.bottom == floor_rect.top:
+                window.blit(dog_surf, obstacle_rect)
+            else:
+                window.blit(rocket_surf, obstacle_rect)
+
+        obstacle_list = [
+            obstacle for obstacle in obstacle_list if obstacle.right > 0]
+    return obstacle_list
 
 
 def drawScore():
@@ -75,11 +110,20 @@ def gameOver():
 
     window.blit(score_title, score_title_rect)
     window.blit(player_surf, player_rect)
+    obstacle_rect_list.clear()
 
     if score == 0:
         window.blit(info_title, info_title_rect)
     else:
         window.blit(final_title, final_title_rect)
+
+
+def collide(player, enemies):
+    if enemies:
+        for object_rect in enemies:
+            if player.colliderect(object_rect):
+                return False
+    return True
 
 
 while True:
@@ -103,8 +147,12 @@ while True:
                 last_time_ticks = int(pygame.time.get_ticks())/1000
 
         if event.type == obsticle_timer and game_active:
-            obstacle_rect_list.append(dog_surf.get_rect(
-                bottomleft=(randint(900, 1900), floor_rect.top)))
+            if randint(0, 2):
+                obstacle_rect_list.append(dog_surf.get_rect(
+                    bottomleft=(randint(900, 1900), floor_rect.top)))
+            else:
+                obstacle_rect_list.append(rocket_surf.get_rect(
+                    bottomleft=(randint(900, 1900), 100)))
 
     # Main game loop
     if game_active:
@@ -132,10 +180,14 @@ while True:
         cat_rect.y += cat_gravity
         if cat_rect.bottom >= floor_rect.top:
             cat_rect.bottom = floor_rect.top
+        player_animation()
         window.blit(cat_surf, cat_rect)
 
         # Obstacle movement
-        obstacle_movement(obstacle_rect_list)
+        obstacle_rect_list = obstacle_movement(obstacle_rect_list)
+        game_active = collide(cat_rect, obstacle_rect_list)
+
+        # window.blit(rocket_surf, rocket_rect)
 
         # Dog
         # dog_rect.left -= 5
