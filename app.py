@@ -1,7 +1,78 @@
 import pygame
 from sys import exit
 import math
-from random import randint
+from random import randint, choice
+
+floor_top = 357
+
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        player_walk_1 = pygame.image.load(
+            "graphics/cat_walk_1.png").convert_alpha()
+        player_walk_2 = pygame.image.load(
+            "graphics/cat_walk_2.png").convert_alpha()
+        self.player_jump = pygame.image.load(
+            "graphics/cat_jump.png").convert_alpha()
+        self.player_walk = [player_walk_1, player_walk_2]
+        self.player_index = 0
+
+        self.image = self.player_walk[self.player_index]
+        self.rect = self.image.get_rect(midbottom=(200, floor_top))
+        self.gravity = 0
+
+    def player_input(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_SPACE] and self.rect.bottom >= floor_top:
+            self.gravity = -25
+
+    def apply_gravity(self):
+        self.gravity += 1
+        self.rect.y += self.gravity
+        if self.rect.bottom >= floor_top:
+            self.rect.bottom = floor_top
+
+    def animation_state(self):
+        if self.rect.bottom < 300:
+            self.image = self.player_jump
+        else:
+            self.player_index += 0.1
+            if self.player_index >= len(self.player_walk):
+                self.player_index = 0
+            self.image = self.player_walk[int(self.player_index)]
+
+    def update(self):
+        self.player_input()
+        self.apply_gravity()
+        self.animation_state()
+
+
+class Obstacle(pygame.sprite.Sprite):
+    def __init__(self, type):
+        super().__init__()
+
+        if type == "dog":
+            self.image = pygame.image.load("graphics/dog.png").convert_alpha()
+            y_pos = floor_top
+        else:
+            self.image = pygame.image.load(
+                "graphics/rocket.png").convert_alpha()
+            y_pos = floor_top-150
+
+        self.rect = self.image.get_rect(bottomleft=(randint(900, 1500), y_pos))
+
+    def move(self):
+        self.rect.left -= 4
+
+    def destroy(self):
+        if self.rect.right < 0:
+            self.kill()
+
+    def update(self):
+        self.move()
+        self.destroy()
+
 
 pygame.init()
 
@@ -18,6 +89,12 @@ game_active = False
 last_time_ticks = 0
 cat_gravity = 0
 score = 0
+
+# groups
+player = pygame.sprite.GroupSingle()
+player.add(Player())
+
+obstacle_group = pygame.sprite.Group()
 
 # graphics
 backdrop_surf = pygame.image.load("graphics/backdrop.png").convert()
@@ -69,7 +146,7 @@ def player_animation():
     pass
 
 
-def obstacle_movement(obstacle_list):
+# def obstacle_movement(obstacle_list):
     if obstacle_list:
         for obstacle_rect in obstacle_list:
             obstacle_rect.x -= 5
@@ -118,12 +195,12 @@ def gameOver():
         window.blit(final_title, final_title_rect)
 
 
-def collide(player, enemies):
-    if enemies:
-        for object_rect in enemies:
-            if player.colliderect(object_rect):
-                return False
-    return True
+# def collide(player, enemies):
+#     if enemies:
+#         for object_rect in enemies:
+#             if player.colliderect(object_rect):
+#                 return False
+#     return True
 
 
 while True:
@@ -147,10 +224,14 @@ while True:
                 last_time_ticks = int(pygame.time.get_ticks())/1000
 
         if event.type == obsticle_timer and game_active:
+            obstacle_group.add(
+                Obstacle(choice(["dog", "rocket", "dog", "dog"])))
             if randint(0, 2):
+
                 obstacle_rect_list.append(dog_surf.get_rect(
                     bottomleft=(randint(900, 1900), floor_rect.top)))
             else:
+
                 obstacle_rect_list.append(rocket_surf.get_rect(
                     bottomleft=(randint(900, 1900), 100)))
 
@@ -176,16 +257,22 @@ while True:
         window.blit(grass_surf, grass_rect)
 
         # Cat
-        cat_gravity += 1
-        cat_rect.y += cat_gravity
-        if cat_rect.bottom >= floor_rect.top:
-            cat_rect.bottom = floor_rect.top
-        player_animation()
-        window.blit(cat_surf, cat_rect)
+        # cat_gravity += 1
+        # cat_rect.y += cat_gravity
+        # if cat_rect.bottom >= floor_rect.top:
+        #     cat_rect.bottom = floor_rect.top
+        # player_animation()
+        # window.blit(cat_surf, cat_rect)
+
+        player.draw(window)
+        player.update()
 
         # Obstacle movement
-        obstacle_rect_list = obstacle_movement(obstacle_rect_list)
-        game_active = collide(cat_rect, obstacle_rect_list)
+        # obstacle_rect_list = obstacle_movement(obstacle_rect_list)
+        # game_active = collide(cat_rect, obstacle_rect_list)
+
+        obstacle_group.draw(window)
+        obstacle_group.update()
 
         # window.blit(rocket_surf, rocket_rect)
 
@@ -196,9 +283,9 @@ while True:
         # window.blit(dog_surf, dog_rect)
 
         # Check Cat / Dog collision
-        if cat_rect.colliderect(dog_rect):
-            game_active = False
-            dog_rect.right = window_x
+        # if cat_rect.colliderect(dog_rect):
+        #     game_active = False
+        #     dog_rect.right = window_x
 
     else:
 
